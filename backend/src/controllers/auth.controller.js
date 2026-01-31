@@ -60,6 +60,7 @@ exports.login = async (req, res) => {
             user: { id: user._id, username: user.username, email: user.email }
         });
     } catch (error) {
+        console.error("❌ LOGIN ERROR:", error); // <--- THIS IS KEY
         res.status(500).json({ error: "Login failed" });
     }
 };

@@ -1,10 +1,9 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+// We use the new SDK package now
+const { GoogleGenAI } = require("@google/genai");
 require('dotenv').config();
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// We use the 'flash' model for speed and efficiency
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// Initialize the client with your API Key
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 /**
  * Generates text based on a prompt using Google Gemini.
@@ -13,11 +12,26 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
  */
 exports.generateText = async (prompt) => {
     try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
+        // New SDK Syntax
+        const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview", // Using the stable Flash model
+            contents: [
+                {
+                    role: "user",
+                    parts: [{ text: prompt }]
+                }
+            ]
+        });
+
+        // In the new SDK, response.text is often a getter or method depending on version.
+        // The snippet you provided accesses it as a property: response.text
+        // If that returns null/undefined, we check strictly.
+        const text = response.text || "No response generated.";
+
+        return text;
+
     } catch (error) {
-        console.error("Gemini API Error:", error);
+        console.error("Gemini SDK Error:", error);
         throw new Error("AI Generation failed");
     }
 };
