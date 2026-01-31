@@ -13,8 +13,11 @@ const WriterStudio = () => {
     const [aiMenuOpen, setAiMenuOpen] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
     const [suggestion, setSuggestion] = useState(null);
+    const [isCopied, setIsCopied] = useState(false);
 
-    // Stats
+    // ... (rest of stats state)
+
+
     const [stats, setStats] = useState({ words: 0, characters: 0, readTime: 0 });
     const [isFocusMode, setIsFocusMode] = useState(false);
 
@@ -80,12 +83,21 @@ const WriterStudio = () => {
         return () => clearTimeout(timer);
     }, [content, id]);
 
-    const handleAskAI = async (type) => {
+    const [customPromptOpen, setCustomPromptOpen] = useState(false);
+    const [customPromptText, setCustomPromptText] = useState('');
+
+    const handleAskAI = async (type, customText = '') => {
         setAiMenuOpen(false);
+        setCustomPromptOpen(false); // Close custom prompt modal if open
         setAiLoading(true);
         setSuggestion(null);
         try {
-            const response = await askAI({ storyId: id, storyContent: content, type });
+            const payload = { storyId: id, storyContent: content, type };
+            if (type === 'custom_prompt') {
+                payload.customPrompt = customText;
+            }
+
+            const response = await askAI(payload);
             const suggestionText = response.suggestion || response.data?.suggestion || "No suggestion generated.";
             setSuggestion(suggestionText);
         } catch (error) {
@@ -113,9 +125,9 @@ const WriterStudio = () => {
 
                 {/* Editor Column - Expands in Focus Mode */}
                 <div className={`${isFocusMode ? 'col-span-1 w-full h-full' : 'lg:col-span-3'}`}>
-                    <div className={`bg-white dark:bg-slate-800 shadow-xl flex flex-col relative overflow-hidden transition-all duration-500 ${isFocusMode ? 'h-full rounded-none ring-0' : 'min-h-[80vh] rounded-3xl ring-1 ring-slate-900/5 dark:ring-slate-700'}`}>
+                    <div className={`bg-white dark:bg-slate-800 shadow-xl flex flex-col relative overflow-hidden transition-all duration-500 ${isFocusMode ? 'h-full rounded-none ring-0 dark:bg-slate-950' : 'min-h-[80vh] rounded-3xl ring-1 ring-slate-900/5 dark:ring-slate-700'}`}>
                         {/* Toolbar / Header */}
-                        <div className="border-b border-slate-100 dark:border-slate-700 p-4 flex items-center justify-between bg-white/80 dark:bg-slate-800/80 backdrop-blur z-10 sticky top-0 transition-colors">
+                        <div className={`border-b border-slate-100 dark:border-slate-700 p-4 flex items-center justify-between backdrop-blur z-10 sticky top-0 transition-colors ${isFocusMode ? 'bg-white/80 dark:bg-slate-950/80' : 'bg-white/80 dark:bg-slate-800/80'}`}>
                             <input
                                 type="text"
                                 value={storyTitle}
@@ -184,17 +196,46 @@ const WriterStudio = () => {
                                 <button onClick={() => handleAskAI('plot_twist')} className="w-full text-left p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-sky-50 dark:hover:bg-sky-900/20 text-slate-600 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-300 text-sm font-medium transition-colors border border-slate-100 dark:border-slate-600 flex items-center gap-3">
                                     <svg className="w-5 h-5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Suggest Plot Twist
                                 </button>
-                                <button onClick={() => handleAskAI('scene_desc')} className="w-full text-left p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-slate-600 dark:text-slate-300 hover:text-purple-700 dark:hover:text-purple-300 text-sm font-medium transition-colors border border-slate-100 dark:border-slate-600 flex items-center gap-3">
+                                <button onClick={() => handleAskAI('scene_description')} className="w-full text-left p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-slate-600 dark:text-slate-300 hover:text-purple-700 dark:hover:text-purple-300 text-sm font-medium transition-colors border border-slate-100 dark:border-slate-600 flex items-center gap-3">
                                     <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg> Describe Scene
                                 </button>
-                                <button onClick={() => handleAskAI('char_chat')} className="w-full text-left p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 text-sm font-medium transition-colors border border-slate-100 dark:border-slate-600 flex items-center gap-3">
+                                <button onClick={() => handleAskAI('character_chat')} className="w-full text-left p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 text-sm font-medium transition-colors border border-slate-100 dark:border-slate-600 flex items-center gap-3">
                                     <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg> Character Chat
+                                </button>
+                                <button onClick={() => setCustomPromptOpen(true)} className="w-full text-left p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-pink-50 dark:hover:bg-pink-900/20 text-slate-600 dark:text-slate-300 hover:text-pink-700 dark:hover:text-pink-300 text-sm font-medium transition-colors border border-slate-100 dark:border-slate-600 flex items-center gap-3">
+                                    <svg className="w-5 h-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg> Custom Prompt
                                 </button>
                             </div>
                         </div>
                     </div>
                 )}
             </div>
+
+            {/* Custom Prompt Modal */}
+            {customPromptOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setCustomPromptOpen(false)}></div>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6 relative z-50 animate-fade-in-up">
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-4">✨ Describe what you need</h3>
+                        <textarea
+                            value={customPromptText}
+                            onChange={(e) => setCustomPromptText(e.target.value)}
+                            placeholder="e.g., Rewrite this scene as a noir detective movie..."
+                            className="w-full h-32 p-3 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 focus:ring-2 focus:ring-pink-500 text-slate-800 dark:text-white mb-4 resize-none"
+                        ></textarea>
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => setCustomPromptOpen(false)} className="px-4 py-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">Cancel</button>
+                            <button
+                                onClick={() => handleAskAI('custom_prompt', customPromptText)}
+                                disabled={!customPromptText.trim()}
+                                className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Generate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* AI Modal Sidebar */}
             {(aiLoading || suggestion) && (
@@ -223,11 +264,21 @@ const WriterStudio = () => {
                                 <button
                                     onClick={() => {
                                         navigator.clipboard.writeText(suggestion);
-                                        alert("Copied to clipboard!");
+                                        setIsCopied(true);
+                                        setTimeout(() => setIsCopied(false), 2000);
+                                        // alert("Copied to clipboard!"); // Removed alert
                                     }}
-                                    className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-lg w-full flex items-center justify-center gap-2 transition-all shadow-md shadow-sky-100"
+                                    className={`font-bold py-3 rounded-lg w-full flex items-center justify-center gap-2 transition-all shadow-md ${isCopied ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-sky-500 hover:bg-sky-600 text-white shadow-sky-100'}`}
                                 >
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg> Copy to Clipboard
+                                    {isCopied ? (
+                                        <>
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Copied!
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg> Copy to Clipboard
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         )}

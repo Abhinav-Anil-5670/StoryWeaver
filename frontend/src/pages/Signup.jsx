@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { register } from '../api';
 
 const Signup = () => {
     const navigate = useNavigate();
@@ -7,10 +8,19 @@ const Signup = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleSignup = (e) => {
+    const [error, setError] = useState('');
+
+    const handleSignup = async (e) => {
         e.preventDefault();
-        // Mock signup logic
-        navigate('/dashboard');
+        setError('');
+        try {
+            const data = await register(name, email, password);
+            navigate('/login');
+        } catch (err) {
+            console.error(err);
+            const errorMessage = err.response?.data?.error || err.response?.data?.message || "Signup failed. Please try again.";
+            setError(errorMessage);
+        }
     };
 
     return (
@@ -45,6 +55,7 @@ const Signup = () => {
                     <div className="mb-8">
                         <h3 className="text-2xl font-bold text-slate-800 mb-2">Create Account</h3>
                         <p className="text-slate-500 text-sm">Already a weaver? <span onClick={() => navigate('/login')} className="text-purple-600 font-bold cursor-pointer hover:underline">Sign In</span></p>
+                        {error && <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">{error}</div>}
                     </div>
 
                     <form onSubmit={handleSignup} className="space-y-6">

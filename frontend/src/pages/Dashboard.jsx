@@ -268,6 +268,14 @@ const Dashboard = () => {
                     </div>
                 </div>
             )}
+            {/* Full Screen Loader */}
+            {loading && (
+                <div className="fixed inset-0 z-[100] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in">
+                    <div className="w-20 h-20 border-4 border-slate-200 dark:border-slate-700 border-t-purple-600 rounded-full animate-spin mb-8"></div>
+                    <h3 className="text-3xl font-bold text-slate-800 dark:text-white mb-2 animate-pulse">Weaving your story...</h3>
+                    <p className="text-slate-500 dark:text-slate-400">Summoning creative spirits ✨</p>
+                </div>
+            )}
         </div>
     );
 };

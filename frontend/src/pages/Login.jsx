@@ -1,15 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { login } from '../api';
 
 const Login = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleLogin = (e) => {
+    const [error, setError] = useState('');
+
+    const handleLogin = async (e) => {
         e.preventDefault();
-        // Mock login logic
-        navigate('/dashboard');
+        setError('');
+        try {
+            const data = await login(email, password);
+            localStorage.setItem('token', data.token); // Store token
+            // TODO: Store user info in context if needed
+            navigate('/dashboard');
+        } catch (err) {
+            console.error(err);
+            const errorMessage = err.response?.data?.error || err.response?.data?.message || "Login failed. Please check your credentials.";
+            setError(errorMessage);
+        }
     };
 
     return (
@@ -41,6 +53,7 @@ const Login = () => {
                     <div className="mb-8">
                         <h3 className="text-2xl font-bold text-slate-800 mb-2">Sign In</h3>
                         <p className="text-slate-500 text-sm">New here? <span onClick={() => navigate('/signup')} className="text-sky-600 font-bold cursor-pointer hover:underline">Create an account</span></p>
+                        {error && <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">{error}</div>}
                     </div>
 
                     <form onSubmit={handleLogin} className="space-y-6">

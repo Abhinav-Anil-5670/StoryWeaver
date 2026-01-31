@@ -1,10 +1,19 @@
 import axios from 'axios';
 
 // Toggle this to true to use Mock Data instead of real backend
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 const api = axios.create({
     baseURL: 'http://localhost:5000/api',
+});
+
+// Add a request interceptor to attach the Token
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
 });
 
 // Mock Storage with Persistence
@@ -97,6 +106,42 @@ export const generateStory = async (payload) => {
     }
     const response = await api.post('/generate', payload);
     return response.data;
+};
+
+export const login = async (email, password) => {
+    if (USE_MOCK) {
+        return new Promise(resolve => setTimeout(() => {
+            localStorage.setItem('token', 'mock-token');
+            resolve({ token: 'mock-token', user: { name: 'Mock User', email } });
+        }, 500));
+    }
+    const response = await api.post('/auth/login', { email, password });
+    return response.data;
+};
+
+export const register = async (name, email, password) => {
+    if (USE_MOCK) {
+        return new Promise(resolve => setTimeout(() => {
+            localStorage.setItem('token', 'mock-token');
+            resolve({ token: 'mock-token', user: { name, email } });
+        }, 500));
+    }
+    const response = await api.post('/auth/register', { name, email, password });
+    return response.data;
+};
+
+export const getAuthUser = async () => {
+    if (USE_MOCK) {
+        return new Promise(resolve => setTimeout(() => {
+            resolve({ _id: '1', username: 'Mock User', email: 'mock@example.com' });
+        }, 500));
+    }
+    const response = await api.get('/auth/me');
+    return response.data;
+};
+
+export const logout = () => {
+    localStorage.removeItem('token');
 };
 
 export default api;

@@ -141,6 +141,23 @@
 }
 
 /* Ensure the editor container itself is transparent or matching */
+/* Ensure the editor container itself is transparent or matching */
 .dark .ql-container {
   font-family: 'Merriweather', serif;
+  @apply text-slate-100 !important;
+}
+
+.dark .ql-editor {
+  color: #f1f5f9 !important;
+}
+
+/* Focus Mode Overrides */
+.focus-mode-quill .ql-toolbar {
+  @apply bg-slate-950 !important;
+  border-bottom-color: #334155 !important;
+  /* Slate 700 */
+}
+
+.dark .focus-mode-quill .ql-toolbar {
+  @apply bg-slate-950 !important;
 }

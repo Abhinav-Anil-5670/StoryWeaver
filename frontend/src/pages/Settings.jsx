@@ -1,17 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
+import { getAuthUser } from '../api';
 
 const Settings = () => {
     const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
 
-    // Mock User Data (Replace with API call later)
     const [user, setUser] = useState({
-        name: "Abhinav Anil",
-        email: "abhinav@example.com",
-        avatar: "https://ui-avatars.com/api/?name=Abhinav+Anil&background=0ea5e9&color=fff"
+        name: "", // Will be filled with username
+        email: "",
+        avatar: "https://ui-avatars.com/api/?name=User&background=0ea5e9&color=fff"
     });
+
+    useEffect(() => {
+        const loadUser = async () => {
+            try {
+                const userData = await getAuthUser();
+                setUser({
+                    name: userData.username, // Map username to name
+                    email: userData.email,
+                    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.username)}&background=0ea5e9&color=fff`
+                });
+            } catch (error) {
+                console.error("Failed to load user profile", error);
+                // navigate('/login'); // Optional: redirect if fetch fails
+            }
+        };
+        loadUser();
+    }, []);
 
     const isDark = theme === 'dark';
 

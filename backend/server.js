@@ -19,6 +19,11 @@ app.use(express.json()); // Allows us to parse JSON bodies
 // Connect to Database
 connectDB();
 
+// Health Check
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Backend is running' });
+});
+
 // Routes
 app.use('/api/auth', authRoutes); // Authentication (Login/Register)
 app.use('/api', storyRoutes);     // Story Features (Protected)

@@ -1,5 +1,12 @@
 const Story = require('../models/story.model');
 const aiService = require('../services/ai.service');
+const stripHTML = (html) => {
+    return html
+        .replace(/<[^>]*>?/gm, '')  // Remove all <tags>
+        .replace(/&nbsp;/g, ' ')    // Replace &nbsp; with normal space
+        .replace(/\s+/g, ' ')       // Collapse extra spaces
+        .trim();                    // Remove leading/trailing space
+}
 
 // ==========================================
 // 📚 STORY MANAGEMENT (CRUD)
@@ -83,16 +90,22 @@ exports.askAI = async (req, res) => {
     try {
         // frontend sends: { storyContent, type }
         const { storyContent, type } = req.body;
+        const cleanText = stripHTML(storyContent);
 
         let prompt = "";
 
         // Construct the prompt based on the user's choice
         if (type === 'plot_twist') {
-            prompt = `Read this story context: "${storyContent}". The author is stuck. Suggest a surprising plot twist that could happen next. Keep it under 3 sentences.`;
+            prompt = `Read this story context: "${cleanText}". The author is stuck. Suggest a surprising plot twist that could happen next. Keep it under 3 sentences.`;
         } else if (type === 'scene_description') {
-            prompt = `Read this story context: "${storyContent}". Take the very last sentence and rewrite it as a vivid, sensory-rich paragraph.`;
+            prompt = `Read this story context: "${cleanText}". Take the very last sentence and rewrite it as a vivid, sensory-rich paragraph.`;
         } else if (type === 'character_chat') {
-            prompt = `Read this story context: "${storyContent}". Assume the persona of the main character. Answer the user's question: "What would you do next?" Answer in first person.`;
+            prompt = `Read this story context: "${cleanText}". Assume the persona of the main character. Answer the user's question: "What would you do next?" Answer in first person.`;
+        } else if (type === 'custom_prompt') {
+            // Expecting 'customPrompt' from the body
+            const { customPrompt } = req.body;
+            if (!customPrompt) return res.status(400).json({ error: "Custom prompt is required" });
+            prompt = `Read this story context: "${cleanText}". User Request: "${customPrompt}". Respond to the user's request based on the story.`;
         } else {
             return res.status(400).json({ error: "Invalid assistance type" });
         }
