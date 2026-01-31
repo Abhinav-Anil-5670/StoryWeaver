@@ -7,12 +7,12 @@ const Navbar = () => {
     const isLanding = location.pathname === '/';
 
     return (
-        <nav className="w-full bg-white/80 backdrop-blur-md border-b border-slate-100 py-4 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50">
+        <nav className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 py-4 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50 transition-colors duration-500">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-sky-500/20">
                     S
                 </div>
-                <h1 className="text-xl font-bold text-slate-900 tracking-tight">StoryWeaver</h1>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">StoryWeaver</h1>
             </div>
 
             <div className="flex items-center gap-4">
@@ -25,8 +25,8 @@ const Navbar = () => {
                     </>
                 ) : (
                     <>
-                        <button onClick={() => navigate('/dashboard')} className="text-slate-600 font-medium text-sm hover:text-sky-600">Dashboard</button>
-                        <div className="w-8 h-8 bg-sky-100 rounded-full flex items-center justify-center text-sky-600 font-bold text-xs border border-sky-200">
+                        <button onClick={() => navigate('/dashboard')} className="text-slate-600 dark:text-slate-300 font-medium text-sm hover:text-sky-600 dark:hover:text-sky-400 transition-colors">Dashboard</button>
+                        <div onClick={() => navigate('/settings')} className="w-8 h-8 bg-sky-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-sky-600 dark:text-sky-400 font-bold text-xs border border-sky-200 dark:border-slate-600 cursor-pointer hover:ring-2 ring-sky-100 transition-all">
                             AB
                         </div>
                     </>

@@ -14,6 +14,41 @@ const WriterStudio = () => {
     const [aiLoading, setAiLoading] = useState(false);
     const [suggestion, setSuggestion] = useState(null);
 
+    // Stats
+    const [stats, setStats] = useState({ words: 0, characters: 0, readTime: 0 });
+    const [isFocusMode, setIsFocusMode] = useState(false);
+
+    useEffect(() => {
+        if (!content) return;
+        const text = content.replace(/<[^>]*>/g, ''); // Strip HTML
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const characters = text.length;
+        const readTime = Math.ceil(words / 200); // Avg reading speed
+        setStats({ words, characters, readTime });
+    }, [content]);
+
+    const handleExport = () => {
+        let text = content
+            .replace(/<\/h[1-6]>/g, '\n\n') // Headers to double newlines
+            .replace(/<\/p>/g, '\n\n') // Paragraphs to double newlines
+            .replace(/<\/div>/g, '\n') // Divs to newlines
+            .replace(/<br\s*\/?>/g, '\n') // Breaks to newlines
+            .replace(/<[^>]*>/g, '') // Strip remaining tags
+            .replace(/&nbsp;/g, ' ') // Fix non-breaking spaces
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&')
+            .trim();
+
+        const file = new Blob([text], { type: 'text/plain' });
+        const element = document.createElement("a");
+        element.href = URL.createObjectURL(file);
+        element.download = `${storyTitle.replace(/\s+/g, '_') || 'untitled'}_draft.txt`;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    };
+
     // Load Story
     useEffect(() => {
         const loadStory = async () => {
@@ -61,105 +96,121 @@ const WriterStudio = () => {
         }
     };
 
+    const modules = {
+        toolbar: [
+            [{ 'header': [1, 2, false] }],
+            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            [{ 'color': [] }, { 'background': [] }],
+            ['clean']
+        ],
+    };
+
     return (
-        <div className="h-[calc(100vh-64px)] flex flex-col bg-slate-100 text-slate-800 relative overflow-hidden">
+        <div className={`min-h-screen transition-colors duration-500 ${isFocusMode ? 'bg-white dark:bg-slate-950' : 'bg-[#eef2f6] dark:bg-slate-900'}`}>
 
-            {/* Editor Header */}
-            <div className="h-16 flex items-center justify-between px-8 bg-white border-b border-slate-200 z-10 shadow-sm">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => navigate('/')} className="text-slate-500 hover:text-sky-600 font-medium transition-colors">
-                        Back to Dashboard
-                    </button>
-                    <span className="text-slate-300">|</span>
-                    <h1 className="font-serif font-bold text-xl text-slate-900">{storyTitle}</h1>
-                </div>
+            <div className={`transition-all duration-500 mx-auto ${isFocusMode ? 'w-full h-screen p-0' : 'max-w-6xl p-6 pt-10 grid grid-cols-1 lg:grid-cols-4 gap-8'}`}>
 
-                <div className="text-sm font-medium">
-                    {isSaving ? <span className="text-sky-500">Saving...</span> : <span className="text-slate-400">Saved</span>}
-                </div>
-            </div>
+                {/* Editor Column - Expands in Focus Mode */}
+                <div className={`${isFocusMode ? 'col-span-1 w-full h-full' : 'lg:col-span-3'}`}>
+                    <div className={`bg-white dark:bg-slate-800 shadow-xl flex flex-col relative overflow-hidden transition-all duration-500 ${isFocusMode ? 'h-full rounded-none ring-0' : 'min-h-[80vh] rounded-3xl ring-1 ring-slate-900/5 dark:ring-slate-700'}`}>
+                        {/* Toolbar / Header */}
+                        <div className="border-b border-slate-100 dark:border-slate-700 p-4 flex items-center justify-between bg-white/80 dark:bg-slate-800/80 backdrop-blur z-10 sticky top-0 transition-colors">
+                            <input
+                                type="text"
+                                value={storyTitle}
+                                onChange={(e) => setStoryTitle(e.target.value)}
+                                className={`font-bold text-slate-800 dark:text-slate-100 bg-transparent border-none focus:ring-0 placeholder-slate-300 dark:placeholder-slate-500 w-full transition-all ${isFocusMode ? 'text-xl' : 'text-2xl'}`}
+                                placeholder="Untitled Story"
+                            />
+                            <div className="flex items-center gap-2 text-slate-400">
+                                <span className="text-xs uppercase font-bold tracking-wider mr-2 hidden sm:block">{isSaving ? 'Saving...' : 'Saved'}</span>
 
-            {/* Cloud-like Editor Area */}
-            <div className="flex-1 overflow-y-auto w-full flex justify-center py-8 writer-scroll-area bg-slate-100">
-                <div className="paper-page relative animate-fade-in-up">
-                    <ReactQuill
-                        theme="snow"
-                        value={content}
-                        onChange={setContent}
-                        className="h-full"
-                        modules={{
-                            toolbar: [
-                                [{ 'header': [1, 2, false] }],
-                                ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                                [{ 'color': [] }, { 'background': [] }],
-                                ['clean']
-                            ],
-                        }}
-                    />
-                </div>
-            </div>
+                                {/* Focus Toggle */}
+                                <button onClick={() => setIsFocusMode(!isFocusMode)} className={`p-2 rounded-full transition-colors ${isFocusMode ? 'bg-sky-100 text-sky-600' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400'}`} title={isFocusMode ? "Exit Focus Mode" : "Enter Focus Mode"}>
+                                    {isFocusMode ? (
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                                    ) : (
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                                    )}
+                                </button>
 
-            {/* Light FAB */}
-            <div className="fixed bottom-10 right-10 z-50 flex flex-col items-end gap-3">
-                {aiMenuOpen && (
-                    <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden mb-2 animate-fade-in-up w-64 origin-bottom-right">
-                        <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                            AI Muse
+                                <button onClick={handleExport} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition-colors" title="Export as Text">
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                </button>
+                            </div>
                         </div>
-                        <button
-                            onClick={() => handleAskAI('plot_twist')}
-                            className="w-full text-left px-4 py-4 hover:bg-sky-50 text-slate-700 text-sm border-b border-slate-50 transition-colors flex items-center gap-3"
-                        >
-                            <svg className="w-5 h-5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Suggest Plot Twist
-                        </button>
-                        <button
-                            onClick={() => handleAskAI('scene_desc')}
-                            className="w-full text-left px-4 py-4 hover:bg-purple-50 text-slate-700 text-sm border-b border-slate-50 transition-colors flex items-center gap-3"
-                        >
-                            <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg> Describe Scene
-                        </button>
-                        <button
-                            onClick={() => handleAskAI('char_chat')}
-                            className="w-full text-left px-4 py-4 hover:bg-emerald-50 text-slate-700 text-sm transition-colors flex items-center gap-3"
-                        >
-                            <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg> Character Chat
-                        </button>
+
+                        {/* Editor Area */}
+                        <div className={`flex-1 overflow-y-auto custom-scrollbar relative ${isFocusMode ? 'flex justify-center bg-white dark:bg-slate-950' : ''}`}>
+                            <div className={`${isFocusMode ? 'w-full max-w-3xl px-8 py-10' : 'h-full p-8'}`}>
+                                <ReactQuill
+                                    theme="snow"
+                                    value={content}
+                                    onChange={setContent}
+                                    modules={modules}
+                                    className={`h-full border-none text-lg font-serif ${isFocusMode ? 'focus-mode-quill' : ''}`}
+                                    placeholder="Once upon a time..."
+                                />
+                            </div>
+                        </div>
+
+                        {/* Status Bar */}
+                        <div className="bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 p-3 text-xs font-medium text-slate-500 dark:text-slate-400 flex justify-between items-center px-6 select-none transition-colors">
+                            <div className="flex gap-4">
+                                <span>{stats.words} words</span>
+                                <span>{stats.characters} chars</span>
+                                <span>{stats.readTime} min read</span>
+                            </div>
+                            <div>
+                                StoryWeaver v1.0
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Sidebar - Hidden in Focus Mode */}
+                {!isFocusMode && (
+                    <div className="lg:col-span-1 space-y-6">
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-lg border border-slate-100 dark:border-slate-700 transition-colors">
+                            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+                                <span className="bg-purple-100 text-purple-600 p-1 rounded">🪄</span> AI Assistant
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+                                Need a spark? Select an option below to get instant AI inputs for your story.
+                            </p>
+
+                            <div className="space-y-3">
+                                <button onClick={() => handleAskAI('plot_twist')} className="w-full text-left p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-sky-50 dark:hover:bg-sky-900/20 text-slate-600 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-300 text-sm font-medium transition-colors border border-slate-100 dark:border-slate-600 flex items-center gap-3">
+                                    <svg className="w-5 h-5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Suggest Plot Twist
+                                </button>
+                                <button onClick={() => handleAskAI('scene_desc')} className="w-full text-left p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-slate-600 dark:text-slate-300 hover:text-purple-700 dark:hover:text-purple-300 text-sm font-medium transition-colors border border-slate-100 dark:border-slate-600 flex items-center gap-3">
+                                    <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg> Describe Scene
+                                </button>
+                                <button onClick={() => handleAskAI('char_chat')} className="w-full text-left p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 text-sm font-medium transition-colors border border-slate-100 dark:border-slate-600 flex items-center gap-3">
+                                    <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg> Character Chat
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
-
-                <button
-                    onClick={() => setAiMenuOpen(!aiMenuOpen)}
-                    className={`h-16 w-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 z-50 ${aiMenuOpen ? 'bg-slate-200 text-slate-600 rotate-45' : 'bg-sky-500 text-white hover:scale-110 hover:shadow-sky-300/50'}`}
-                >
-                    {aiMenuOpen ? (
-                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    ) : (
-                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
-                    )}
-                </button>
             </div>
 
-            {/* AI Sidebar - Light Mode */}
+            {/* AI Modal Sidebar */}
             {(aiLoading || suggestion) && (
-                <div className="fixed inset-0 z-40 flex justify-end">
+                <div className="fixed inset-0 z-50 flex justify-end">
                     <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" onClick={() => { setAiLoading(false); setSuggestion(null); }}></div>
                     <div className="w-full max-w-md h-full bg-white shadow-2xl p-8 flex flex-col animate-slide-in-right relative z-50">
-                        <div className="flex justify-between items-center mb-8 border-b border-slate-100 pb-4">
-                            <h2 className="text-2xl font-bold text-slate-800">AI Muse</h2>
-                            <button
-                                onClick={() => { setAiLoading(false); setSuggestion(null); }}
-                                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors"
-                            >
-                                ✕
-                            </button>
+                        <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                            <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                <span>✨</span> AI Muse
+                            </h2>
+                            <button onClick={() => { setAiLoading(false); setSuggestion(null); }} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors">✕</button>
                         </div>
 
                         {aiLoading ? (
                             <div className="flex flex-col items-center justify-center flex-1 text-slate-400 gap-6">
-                                <div className="relative">
-                                    <div className="w-12 h-12 border-4 border-sky-100 border-t-sky-500 rounded-full animate-spin"></div>
-                                </div>
+                                <div className="w-12 h-12 border-4 border-sky-100 border-t-sky-500 rounded-full animate-spin"></div>
                                 <p className="animate-pulse tracking-wide text-sm font-medium text-slate-500">Writing magic...</p>
                             </div>
                         ) : (
